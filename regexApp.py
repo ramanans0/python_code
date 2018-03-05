@@ -1,0 +1,154 @@
+#! /usr/local/bin/python3.4
+import sys
+import re
+from uuid import UUID
+
+def _readFile():
+    with open("CompanyEmployees.txt", "r") as signalFile:
+        lines = signalFile.readlines()
+    return lines
+
+def getRejectedEntries():
+    entries = _readFile()
+    ans = []
+    for entry in entries:
+        regexed = r"([^0-9\n;,-]+)"
+        worder = re.search(r"(\w+),\s(\w+)[,;\s]*$", entry, re.X | re.I)
+        if worder:
+            ans.append(worder.group(2)+ ' ' +worder.group(1))
+        worder = re.search(r"(^\w+\s\w+)[,;\s]*$", entry, re.X | re.I)
+        if worder:
+            ans.append(worder.group(1))
+    return ans
+
+def getCompleteEntries():
+    entries = _readFile()
+    ided = getEmployeesWithIDs()
+    sted = getEmployeesWithStates()
+    numed =getEmployeesWithPhones()
+    ans = []
+    fulldict = {}
+    for entry in entries:
+        worder = re.search(r"(^(\w+),\s(\w+)|(\w+\s\w+)).*", entry, re.X | re.I)
+        name = worder.group(1)
+        if ',' in name:
+            name = (worder.group(3) + ' ' + worder.group(2))
+        if name in ided.keys() and name in numed.keys() and name in sted.keys():
+            fullval = (ided[name], numed[name], sted[name])
+            ans.append(fullval)
+            fulldict[name] = fullval
+    return fulldict
+
+
+def getEmployeesWithIDs():
+    entries = _readFile()
+    ans = []
+    andict = {}
+    val = []
+
+
+    for entry in entries:
+        worder = re.search(r"(^(\w+),\s(\w+)|(\w+\s\w+)).*\,\,((\w{32})|(\{\w{8}\-\w{4}\-\w{4}\-\w{4}\-\w{12}\})|(\w{8}\-\w{4}\-\w{4}\-\w{4}\-\w{12}))\,.*", entry, re.X | re.I)
+        if worder:
+            name = worder.group(1)
+            line = worder.group(5)
+            if ',' in name:
+                name = (worder.group(3) + ' ' + worder.group(2))
+            if len(worder.group(5)) != 0:
+                line = UUID(line)
+                line = str(line)
+                andict[name] = line
+    return andict
+
+
+
+def getEmployeesWithPhones():
+    entries = _readFile()
+    ans = []
+    numdict = {}
+    for entry in entries:
+        worder = re.search(r"(^(\w+),\s(\w+)|(\w+\s\w+)).*\,((\d{10})|(\(\d{3}\)\s\d{3}\-\d{4})|(\d{3}\-\d{3}\-\d{4}))\;.*", entry, re.X | re.I)
+        if worder:
+            ans.append(worder.group(5))
+            number = worder.group(5)
+            name = worder.group(1)
+            if ',' in name:
+                name = (worder.group(3) + ' ' + worder.group(2))
+            if '-' in number and '(' not in number:
+                number = '('+ number[0:3] + ')' + ' ' + number[4:7] + '-' + number[8:]
+            elif '-' not in number:
+                number = '('+ number[0:3] + ')' + ' ' + number[3:6] + '-' + number[6:]
+            numdict[name] = number
+    return numdict
+
+
+def getEmployeesWithStates():
+    entries = _readFile()
+    ans = []
+    stdict = {}
+    for entry in entries:
+        worder = re.search(r"(^(\w+),\s(\w+)|(\w+\s\w+)).*\,\,(.*)$", entry, re.X | re.I)
+        if len(worder.group(5)) != 0:
+            ans.append(worder.group(5))
+            state = worder.group(5)
+            name = worder.group(1)
+            if ',' in name:
+                name = (worder.group(3) + ' ' + worder.group(2))
+            stdict[name] = state
+    return stdict
+
+def getEmployeesWithoutIDs():
+    entries = _readFile()
+    rejects = getRejectedEntries()
+    ided = getEmployeesWithIDs()
+    ans = []
+    for entry in entries:
+        worder = re.search(r"(^(\w+),\s(\w+)|(\w+\s\w+)).*", entry, re.X | re.I)
+        name = worder.group(1)
+        if ',' in name:
+            name = (worder.group(3) + ' ' + worder.group(2))
+        if name not in ided.keys():
+            if name not in rejects:
+                ans.append(name)
+
+    return ans
+
+
+def getEmployeesWithoutPhones():
+    entries = _readFile()
+    rejects = getRejectedEntries()
+    ided = getEmployeesWithPhones()
+    ans = []
+    for entry in entries:
+        worder = re.search(r"(^(\w+),\s(\w+)|(\w+\s\w+)).*", entry, re.X | re.I)
+        name = worder.group(1)
+        if ',' in name:
+            name = (worder.group(3) + ' ' + worder.group(2))
+        if name not in ided.keys():
+            if name not in rejects:
+                ans.append(name)
+    return ans
+
+
+def getEmployeesWithoutStates():
+    entries = _readFile()
+    rejects = getRejectedEntries()
+    ided = getEmployeesWithStates()
+    ans = []
+    for entry in entries:
+        worder = re.search(r"(^(\w+),\s(\w+)|(\w+\s\w+)).*", entry, re.X | re.I)
+        name = worder.group(1)
+        if ',' in name:
+            name = (worder.group(3) + ' ' + worder.group(2))
+        if name not in ided.keys():
+            if name not in rejects:
+                ans.append(name)
+    return ans
+
+def stringtest():
+    val = "abcdefg"
+    print(val[3:6])
+
+
+if __name__ == "__main__":
+    stringtest()
